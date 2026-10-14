@@ -7,9 +7,22 @@ from the screen and move during breaks.
 
 Requires Python 3.9 or newer.
 
+For a regular install:
+
 ```bash
 python -m pip install .
 ```
+
+When developing from a checkout, install in editable mode so the `poco`
+command runs the current source files. Re-run this from the project directory
+if the command is still resolving to a previous installation:
+
+```bash
+python -m pip install -e .
+```
+
+Editable installs pick up source changes automatically; regular installs need
+to be reinstalled after updating the code.
 
 ## Run
 
@@ -23,13 +36,14 @@ Poco keeps repeating focus and break periods until you stop it. After each
 focus period it starts the configured short break; after every fourth focus
 period, it starts a 20-minute long break instead. The terminal display includes
 an ASCII countdown and progress bar for every phase. The dashboard stays in
-place while an animated `###` marker moves only inside the progress bar.
+place while an animated `###` marker moves only inside the progress bar. At
+phase changes, Poco updates the phase title in place rather than redrawing the
+dashboard.
 
 ## Controls
 
-- Press `p` to pause the timer.
-- Press `r` to resume.
-- Press `Ctrl+C` to stop Poco, restore the terminal, and exit with a break
-  reminder. It does not close other applications.
+- Press `Space` to pause or resume the timer.
+- Press `Ctrl+C` to stop Poco, restore the terminal, and exit quietly. It does
+  not close other applications.
 
 The timer uses only the Python standard library.

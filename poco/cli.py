@@ -84,7 +84,9 @@ class KeyReader:
 
 def render_dashboard(
     label, remaining, elapsed, total, paused, output, refresh=False,
-    animation_step=0, update_clock=True, update_progress=True, update_state=False
+    animation_step=0, update_title=False, update_clock=True,
+    update_progress=True, update_message=False, update_state=False,
+    phase_message=""
 ):
     width = 54
     bar_width = 30
@@ -104,9 +106,9 @@ def render_dashboard(
     if remaining == 0:
         state = "PHASE COMPLETE"
     elif paused:
-        state = "PAUSED - press r to resume"
+        state = "PAUSED - press SPACE to resume"
     else:
-        state = "press p to pause"
+        state = "press SPACE to pause"
     title = f"  P O C O  ::  {label}".center(width)
     lines = [
         "+" + "-" * width + "+",
@@ -114,15 +116,19 @@ def render_dashboard(
         "|" + " " * width + "|",
         "|" + clock.center(width) + "|",
         "|" + f"  [{bar}]  {int(progress * 100):3d}%".ljust(width) + "|",
-        "|" + " " * width + "|",
+        "|" + f"  {phase_message}".ljust(width) + "|",
         "|" + f"  {state}  |  Ctrl+C: stop".ljust(width) + "|",
         "+" + "-" * width + "+",
     ]
     if output.isatty() and refresh:
+        if update_title:
+            output.write("\033[2;1H" + lines[1])
         if update_clock:
             output.write("\033[4;1H" + lines[3])
         if update_progress:
             output.write("\033[5;1H" + lines[4])
+        if update_message:
+            output.write("\033[6;1H" + lines[5])
         if update_state:
             output.write("\033[7;1H" + lines[6])
         output.write("\033[9;1H")
@@ -134,13 +140,17 @@ def render_dashboard(
     output.flush()
 
 
-def run_phase(label, duration_seconds, keyboard, output, clock=time.monotonic):
+def run_phase(
+    label, duration_seconds, keyboard, output, clock=time.monotonic,
+    reuse_dashboard=False, phase_message=""
+):
     deadline = clock() + duration_seconds
     paused_remaining = None
     previous_remaining = None
     paused = False
-    dashboard_initialized = False
-    state_changed = False
+    dashboard_initialized = reuse_dashboard
+    state_changed = reuse_dashboard
+    title_changed = reuse_dashboard
     previous_animation_step = None
 
     while True:
@@ -163,11 +173,15 @@ def run_phase(label, duration_seconds, keyboard, output, clock=time.monotonic):
                 output,
                 refresh=dashboard_initialized,
                 animation_step=animation_step,
+                update_title=title_changed,
                 update_clock=clock_changed,
                 update_progress=progress_changed,
+                update_message=title_changed,
                 update_state=state_changed or remaining == 0,
+                phase_message=phase_message,
             )
             dashboard_initialized = True
+            title_changed = False
             previous_remaining = remaining
             previous_animation_step = animation_step
             state_changed = False
@@ -175,12 +189,12 @@ def run_phase(label, duration_seconds, keyboard, output, clock=time.monotonic):
             return
 
         key = keyboard.read_key(timeout=min(0.1, remaining))
-        if key == "p" and not paused:
+        if key == " " and not paused:
             paused_remaining = max(1, math.ceil(deadline - clock()))
             paused = True
             previous_remaining = None
             state_changed = True
-        elif key == "r" and paused:
+        elif key == " " and paused:
             deadline = clock() + paused_remaining
             paused_remaining = None
             paused = False
@@ -201,15 +215,26 @@ def timer_phases(config):
 
 def run_timer(config):
     previous_phase = None
+    dashboard_initialized = False
     with KeyReader() as keyboard:
         for label, seconds in timer_phases(config):
             if label == "SHORT BREAK":
-                print("\nFocus complete. Take a short break and move a little!")
+                phase_message = "Focus complete. Short break - move a little!"
             elif label == "LONG BREAK":
-                print("\nFour focus periods complete. Enjoy a longer break!")
+                phase_message = "Four focus periods complete. Enjoy a longer break!"
             elif previous_phase is not None:
-                print("\nBreak complete. Back to focus!")
-            run_phase(label, seconds, keyboard, sys.stdout)
+                phase_message = "Break complete. Back to focus!"
+            else:
+                phase_message = "Focus session started. Stay focused!"
+            run_phase(
+                label,
+                seconds,
+                keyboard,
+                sys.stdout,
+                reuse_dashboard=dashboard_initialized,
+                phase_message=phase_message,
+            )
+            dashboard_initialized = True
             previous_phase = label
 
 
@@ -218,5 +243,5 @@ def main(argv=None):
     try:
         run_timer(config)
     except KeyboardInterrupt:
-        print("\n\nTimer stopped. Take a break, stretch, and rest your eyes.")
+        pass
     return 0
