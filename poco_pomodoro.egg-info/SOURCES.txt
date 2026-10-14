@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+poco/__init__.py
+poco/__main__.py
+poco/cli.py
+poco_pomodoro.egg-info/PKG-INFO
+poco_pomodoro.egg-info/SOURCES.txt
+poco_pomodoro.egg-info/dependency_links.txt
+poco_pomodoro.egg-info/entry_points.txt
+poco_pomodoro.egg-info/top_level.txt
+tests/test_cli.py
