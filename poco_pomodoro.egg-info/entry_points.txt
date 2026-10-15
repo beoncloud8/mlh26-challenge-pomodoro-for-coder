@@ -1,0 +1,2 @@
+[console_scripts]
+poco = poco.cli:main

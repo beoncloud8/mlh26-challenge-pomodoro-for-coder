@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "poco-pomodoro"
+version = "0.1.0"
+description = "A terminal Pomodoro timer for developers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Pomodoro for Coder contributors" }]
+
+[project.scripts]
+poco = "poco.cli:main"
+
+[tool.setuptools]
+packages = ["poco"]
